@@ -1,0 +1,31 @@
+# permissions for end users to edit loadbalancers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: cloudscale-loadbalancer-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: cloudscale-loadbalancer-controller
+    app.kubernetes.io/part-of: cloudscale-loadbalancer-controller
+    app.kubernetes.io/managed-by: kustomize
+  name: cloudscale-loadbalancer-editor-role
+rules:
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers/status
+  verbs:
+  - get

@@ -1,0 +1,28 @@
+# permissions for end users to view loadbalancers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: cloudscale-loadbalancer-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: cloudscale-loadbalancer-controller
+    app.kubernetes.io/part-of: cloudscale-loadbalancer-controller
+    app.kubernetes.io/managed-by: kustomize
+    rbac.authorization.k8s.io/aggregate-to-cluster-reader: 'true'
+  name: cloudscale-loadbalancer-viewer-role
+rules:
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers/status
+  verbs:
+  - get
