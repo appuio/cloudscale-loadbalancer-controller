@@ -1,0 +1,30 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cloudscale.appuio.io
+  resources:
+  - loadbalancers/status
+  verbs:
+  - get
+  - patch
+  - update
