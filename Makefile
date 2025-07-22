@@ -18,8 +18,13 @@ help: ## Show this help
 all: build ## Invokes the build target
 
 .PHONY: test
-test: ## Run tests
-	go test ./... -coverprofile cover.tmp.out
+test: manifests generate ## Run tests
+	KUBEBUILDER_ASSETS="$(shell go tool sigs.k8s.io/controller-runtime/tools/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.tmp.out
+	cat cover.tmp.out | grep -v "zz_generated.deepcopy.go" > cover.out
+
+.PHONY: test.race ## Run tests with race detector. GitHub Actions machines are not powerful enough to run this.
+test.race: manifests generate
+	KUBEBUILDER_ASSETS="$(shell go tool sigs.k8s.io/controller-runtime/tools/setup-envtest use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -race -coverprofile cover.tmp.out
 	cat cover.tmp.out | grep -v "zz_generated.deepcopy.go" > cover.out
 
 .PHONY: build
@@ -56,11 +61,15 @@ build.docker: $(BIN_FILENAME) ## Build the docker image
 		--tag $(GHCR_IMG)
 
 clean: ## Cleans up the generated resources
-	rm -rf dist/ cover.out $(BIN_FILENAME) || true
+	rm -rf contrib/ dist/ cover.out $(BIN_FILENAME) ||:
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+	go run ./main.go controller
+
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
 
 ###
 ### Assets

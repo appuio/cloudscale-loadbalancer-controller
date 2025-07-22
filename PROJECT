@@ -4,7 +4,7 @@
 # More info: https://book.kubebuilder.io/reference/project-config.html
 domain: appuio.io
 layout:
-- go.kubebuilder.io/v3
+- go.kubebuilder.io/v4
 projectName: cloudscale-loadbalancer-controller
 repo: github.com/appuio/cloudscale-loadbalancer-controller
 resources:
