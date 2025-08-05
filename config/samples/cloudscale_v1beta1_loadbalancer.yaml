@@ -1,6 +1,26 @@
 apiVersion: cloudscale.appuio.io/v1beta1
 kind: LoadBalancer
 metadata:
-  name: test-lb
-spec: {}
-status: {}
+  name: sample-ingress
+spec:
+  pools:
+  - name: http
+    frontend:
+      port: 80
+    backend:
+      nodeSelector:
+        matchLabels:
+          node-role.kubernetes.io/infra: ""
+      port: 80
+      healthMonitor:
+        type: TCP
+  - name: https
+    frontend:
+      port: 443
+    backend:
+      nodeSelector:
+        matchLabels:
+          node-role.kubernetes.io/infra: ""
+      port: 443
+      healthMonitor:
+        type: TCP

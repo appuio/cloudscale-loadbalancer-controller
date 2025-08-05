@@ -21,11 +21,14 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"golang.org/x/oauth2"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/cloudscale-ch/cloudscale-go-sdk/v6"
 	configv1 "github.com/openshift/api/config/v1"
 	machinev1beta1 "github.com/openshift/api/machine/v1beta1"
 	machineconfigurationv1 "github.com/openshift/api/machineconfiguration/v1"
@@ -39,9 +42,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	cloudscalev1beta1 "github.com/appuio/cloudscale-loadbalancer-controller/api/v1beta1"
 	"github.com/appuio/cloudscale-loadbalancer-controller/controllers"
+	webhookv1beta1 "github.com/appuio/cloudscale-loadbalancer-controller/webhook/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -62,6 +67,8 @@ func init() {
 }
 
 func main() {
+	ctx := ctrl.SetupSignalHandler()
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -80,6 +87,16 @@ func main() {
 	flag.StringVar(&metricsCertName, "metrics-cert-name", "tls.crt", "The name of the metrics server certificate file.")
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 
+	var webhookCertPath, webhookCertName, webhookCertKey string
+	flag.StringVar(&webhookCertPath, "webhook-cert-path", "", "The directory that contains the webhook certificate.")
+	flag.StringVar(&webhookCertName, "webhook-cert-name", "tls.crt", "The name of the webhook certificate file.")
+	flag.StringVar(&webhookCertKey, "webhook-cert-key", "tls.key", "The name of the webhook key file.")
+
+	var maxReconcileInterval time.Duration
+	flag.DurationVar(&maxReconcileInterval, "max-reconcile-interval", 5*time.Minute,
+		"The maximum interval between two reconciles of a LoadBalancer object. "+
+			"Can be lowered to speed up reconciliation of external state changes.")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -90,7 +107,32 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	// Create watcher for metrics
-	var metricsCertWatcher *certwatcher.CertWatcher
+	var metricsCertWatcher, webhookCertWatcher *certwatcher.CertWatcher
+
+	var webhookTLSOpts []func(*tls.Config)
+
+	if len(webhookCertPath) > 0 {
+		setupLog.Info("Initializing webhook certificate watcher using provided certificates",
+			"webhook-cert-path", webhookCertPath, "webhook-cert-name", webhookCertName, "webhook-cert-key", webhookCertKey)
+
+		var err error
+		webhookCertWatcher, err = certwatcher.New(
+			filepath.Join(webhookCertPath, webhookCertName),
+			filepath.Join(webhookCertPath, webhookCertKey),
+		)
+		if err != nil {
+			setupLog.Error(err, "Failed to initialize webhook certificate watcher")
+			os.Exit(1)
+		}
+
+		webhookTLSOpts = append(webhookTLSOpts, func(config *tls.Config) {
+			config.GetCertificate = webhookCertWatcher.GetCertificate
+		})
+	}
+
+	webhookServer := webhook.NewServer(webhook.Options{
+		TLSOpts: webhookTLSOpts,
+	})
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
 	// More info:
@@ -135,6 +177,7 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
+		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "59eb1b2a.appuio.io",
@@ -146,12 +189,39 @@ func main() {
 		os.Exit(1)
 	}
 
+	cloudscaleAPIToken := os.Getenv("CLOUDSCALE_API_TOKEN")
+	if cloudscaleAPIToken == "" {
+		setupLog.Error(nil, "CLOUDSCALE_API_TOKEN environment variable is not set")
+		os.Exit(1)
+	}
+	tc := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: cloudscaleAPIToken},
+	))
+	cloudscaleClient := cloudscale.NewClient(tc)
+
 	if err = (&controllers.LoadBalancerReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("loadbalancer-controller"),
+
+		MaxReconcileInterval: maxReconcileInterval,
+
+		ServerClient:                    cloudscaleClient.Servers,
+		FloatingIPsClient:               cloudscaleClient.FloatingIPs,
+		LoadbalancerClient:              cloudscaleClient.LoadBalancers,
+		LoadbalancerHealthMonitorClient: cloudscaleClient.LoadBalancerHealthMonitors,
+		LoadbalancerListenerClient:      cloudscaleClient.LoadBalancerListeners,
+		LoadbalancerPoolClient:          cloudscaleClient.LoadBalancerPools,
+		LoadbalancerPoolMemberClient:    cloudscaleClient.LoadBalancerPoolMembers,
+	}).SetupWithManager("loadbalancer", mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "LoadBalancer")
 		os.Exit(1)
+	}
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupLoadBalancerWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "LoadBalancer")
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 
@@ -159,6 +229,14 @@ func main() {
 		setupLog.Info("Adding metrics certificate watcher to manager")
 		if err := mgr.Add(metricsCertWatcher); err != nil {
 			setupLog.Error(err, "unable to add metrics certificate watcher to manager")
+			os.Exit(1)
+		}
+	}
+
+	if webhookCertWatcher != nil {
+		setupLog.Info("Adding webhook certificate watcher to manager")
+		if err := mgr.Add(webhookCertWatcher); err != nil {
+			setupLog.Error(err, "unable to add webhook certificate watcher to manager")
 			os.Exit(1)
 		}
 	}
@@ -173,7 +251,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	if err := mgr.Start(ctx); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}

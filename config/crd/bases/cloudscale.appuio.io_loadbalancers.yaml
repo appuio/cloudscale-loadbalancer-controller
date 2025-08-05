@@ -38,9 +38,439 @@ spec:
             type: object
           spec:
             description: LoadBalancerSpec defines the desired state of LoadBalancer
+            properties:
+              floatingIPAddresses:
+                description: |-
+                  FloatingIPAddresses assigns the given Floating IPs to the
+                  load balancer. The expected value is a list of addresses of the
+                  Floating IPs in CIDR notation. For example:
+
+                  ["5.102.150.123/32", "2a06:c01::123/128"]
+
+                  Floating IPs already assigned to the loadbalancer, but no longer
+                  present in this field, stay on the loadbalancer until another
+                  service requests them. This is due to the fact that it is not possible
+                  to unassign Floating IPs to point to nowhere.
+
+                  The Floating IPs are only assigned to the LoadBalancer once it has
+                  been fully created.
+                items:
+                  description: FloatingIPAddress defines a floating IP address for
+                    the load balancer.
+                  properties:
+                    cidr:
+                      description: CIDR is the actual floating IP address that should
+                        be assigned to the loadbalancer in CIDR notation.
+                      type: string
+                  required:
+                  - cidr
+                  type: object
+                type: array
+              pools:
+                description: Pools defines the pools that are part of the load balancer.
+                items:
+                  properties:
+                    algorithm:
+                      default: RoundRobin
+                      description: |-
+                        Algorithm defines the algorithm used to distribute traffic across
+                        the backend servers.
+                        This can be one of `RoundRobin`, `LeastConnections`, or `SourceIP`.
+                        * `RoundRobin` distributes traffic evenly across all servers.
+                        * `LeastConnections` sends traffic to the server with the least active
+                        connections.
+                        * `SourceIP` uses the source IP address to determine which server to
+                        send the traffic to. `SourceIP` maintains session persistence across
+                        multiple requests and is useful for applications that require it.
+
+                        The default is `RoundRobin`.
+
+                        Changing the algorithm of the pool will cause short downtime as the pool is recreated.
+                      enum:
+                      - RoundRobin
+                      - LeastConnections
+                      - SourceIP
+                      type: string
+                    backend:
+                      description: Backend configures the backend of the pool.
+                      properties:
+                        allowedSubnets:
+                          description: |-
+                            AllowedSubnets is a JSON list of subnet UUIDs that the
+                            loadbalancer should use. By default, all subnets of a node are used.
+
+                            If set, nodes without a matching subnet are ignored.
+                          items:
+                            properties:
+                              uuid:
+                                description: UUID is the UUID of the subnet that should
+                                  be used for the load balancer.
+                                type: string
+                            required:
+                            - uuid
+                            type: object
+                          type: array
+                        connectTimeout:
+                          default: 5s
+                          description: |-
+                            ConnectTimeout denotes the time it should maximally take to connect to a backend server
+                            before the connection is considered failed.
+                            Defaults to 5 seconds.
+                          format: duration
+                          type: string
+                        dataTimeout:
+                          default: 50s
+                          description: |-
+                            DataTimeout defines the milliseconds until inactive backend connections are dropped.
+                            Defaults to 50 seconds.
+                          format: duration
+                          type: string
+                        healthMonitor:
+                          description: HealthMonitor defines the health check configuration
+                            for the load balancer.
+                          properties:
+                            delay:
+                              default: 2s
+                              description: |-
+                                Delay is the time between health checks.
+                                Defaults to 2 seconds.
+                              format: duration
+                              type: string
+                            failureThreshold:
+                              default: 3
+                              description: |-
+                                FailureThreshold is the number of consecutive failed health checks
+                                required before a backend server is considered unhealthy.
+                                Defaults to 3.
+                              minimum: 1
+                              type: integer
+                            http:
+                              description: HTTP defines the HTTP health check configuration.
+                              properties:
+                                host:
+                                  description: Host is the HTTP `Host:` header to
+                                    use for the health check.
+                                  type: string
+                                method:
+                                  description: |-
+                                    Method is the HTTP method to use for the health check.
+                                    This can be one of `CONNECT`, `DELETE`, `GET`, `HEAD`, `OPTIONS`, `PATCH`,
+                                    `POST`, `PUT`, or `TRACE`.
+                                    Defaults to `GET`.
+                                  enum:
+                                  - CONNECT
+                                  - DELETE
+                                  - GET
+                                  - HEAD
+                                  - OPTIONS
+                                  - PATCH
+                                  - POST
+                                  - PUT
+                                  - TRACE
+                                  type: string
+                                path:
+                                  description: |-
+                                    Path is the URL path to check.
+                                    Defaults to `/`.
+                                  type: string
+                                statusCodes:
+                                  description: |-
+                                    StatusCodes is a list of HTTP status codes that indicate a healthy backend.
+                                    This can either be a list of status codes or a single range of status codes.
+                                    For example, `200`, `201`, `202`, or `200-299`.
+                                    Defaults to `[200]`.
+                                  items:
+                                    type: string
+                                  type: array
+                                version:
+                                  description: |-
+                                    Version is the HTTP version to use for the health check.
+                                    This can be one of `1.0`or `1.1`.
+                                    Defaults to `1.1`.
+                                  enum:
+                                  - "1.0"
+                                  - "1.1"
+                                  type: string
+                              type: object
+                            port:
+                              description: |-
+                                Port is the port on which the health check is performed.
+                                If not specified the health check is performed on the port which is configured for the pool backend.
+                              format: int32
+                              type: integer
+                            successThreshold:
+                              default: 2
+                              description: |-
+                                SuccessThreshold is the number of consecutive successful health checks
+                                required before a backend server is considered healthy.
+                                Defaults to 2.
+                              minimum: 1
+                              type: integer
+                            timeout:
+                              default: 1s
+                              description: |-
+                                Timeout is the time to wait for a response from the backend server.
+                                Defaults to 1 second.
+                              format: duration
+                              type: string
+                            type:
+                              default: TCP
+                              description: |-
+                                Type defines the type of health check to perform.
+                                This can be one of `Ping`,`TCP`, `HTTP`, `HTTPS`, or `TLSHello`.
+                                Defaults to `TCP`.
+                              enum:
+                              - Ping
+                              - TCP
+                              - HTTP
+                              - HTTPS
+                              - TLSHello
+                              type: string
+                          type: object
+                        nodeSelector:
+                          description: |-
+                            NodeSelector defines the node selector for the load balancer.
+                            The controller automatically updates the pool members to match
+                            the nodes matching this selector.
+                          properties:
+                            matchExpressions:
+                              description: matchExpressions is a list of label selector
+                                requirements. The requirements are ANDed.
+                              items:
+                                description: |-
+                                  A label selector requirement is a selector that contains values, a key, and an operator that
+                                  relates the key and values.
+                                properties:
+                                  key:
+                                    description: key is the label key that the selector
+                                      applies to.
+                                    type: string
+                                  operator:
+                                    description: |-
+                                      operator represents a key's relationship to a set of values.
+                                      Valid operators are In, NotIn, Exists and DoesNotExist.
+                                    type: string
+                                  values:
+                                    description: |-
+                                      values is an array of string values. If the operator is In or NotIn,
+                                      the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                      the values array must be empty. This array is replaced during a strategic
+                                      merge patch.
+                                    items:
+                                      type: string
+                                    type: array
+                                    x-kubernetes-list-type: atomic
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                              x-kubernetes-list-type: atomic
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              description: |-
+                                matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                operator is "In", and the values array contains only "value". The requirements are ANDed.
+                              type: object
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        port:
+                          description: Port is the port on which the traffic is sent
+                            on the backend servers.
+                          format: int32
+                          type: integer
+                        protocol:
+                          default: TCP
+                          description: |-
+                            Protocol defines the protocol used by the backend servers.
+                            This can be one of `TCP`, `Proxy`, or `ProxyV2`.
+                            * `TCP` no connection information is sent to the backend servers.
+                            * `Proxy` wraps the connection in a proxy protocol header.
+                              The load balancer sends an initial series of octets describing the
+                              connection to the backend server.
+                            * `ProxyV2` is similar to `Proxy`, but uses a different version of the
+                              proxy protocol header.
+
+                            The default is `TCP`.
+
+                            Changing the protocol of the pool will cause short downtime as the pool is recreated.
+                          enum:
+                          - TCP
+                          - Proxy
+                          - ProxyV2
+                          type: string
+                      required:
+                      - port
+                      type: object
+                    frontend:
+                      description: Frontend configures the frontend of the pool.
+                      properties:
+                        allowedCIDRs:
+                          description: |-
+                            AllowedCIDRs defines the source IPs that are allowed to access the listener.
+                            This is a list of source IP addresses in CIDR notation, for example:
+                            ["1.1.1.1", "104.132.228.0/24"]
+                            If not specified, all source IP addresses are allowed to access the
+                            listener.
+                            If specified, only the source IP addresses that match the CIDRs
+                            in this list are allowed to access the listener.
+                          items:
+                            description: AllowedCIDR defines a CIDR that is allowed
+                              to access the listener.
+                            properties:
+                              cidr:
+                                description: |-
+                                  CIDR is the source IP address in CIDR notation.
+                                  For example: "192.168.1.0/24"
+                                type: string
+                            required:
+                            - cidr
+                            type: object
+                          type: array
+                        dataTimeout:
+                          default: 50s
+                          description: |-
+                            DataTimeout defines the milliseconds until inactive client connections are dropped.
+                            Defaults to 50 seconds.
+                          format: duration
+                          type: string
+                        port:
+                          description: Port is the port on which the listener will
+                            accept traffic.
+                          format: int32
+                          type: integer
+                        protocol:
+                          default: TCP
+                          description: |-
+                            Protocol defines the protocol used by the listener.
+                            Currently, only `TCP` is supported.
+                            Defaults to `TCP`.
+                          enum:
+                          - TCP
+                          type: string
+                      required:
+                      - port
+                      type: object
+                    name:
+                      description: |-
+                        Name is the name of the pool.
+                        Changing the name of the pool will cause short downtime as the pool is recreated.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              uuid:
+                description: |-
+                  LoadBalancerUUID uniquely identifies the loadbalancer. This field
+                  should not be provided by the customer, unless the adoption of an
+                  existing load balancer is desired.
+
+                  In all other cases, this value is set by the CCM after creating the
+                  load balancer, to ensure that we track it with a proper ID and not
+                  a name that might change without our knowledge.
+                type: string
+              virtualIPAddresses:
+                description: |-
+                  VirtualIPAddresses defines the virtual IP addresses through which
+                  incoming traffic is received. this defaults to an automatically assigned
+                  public IPv4 and IPv6 address.
+
+                  If you want to use a specific private subnet instead, to load balance
+                  inside your cluster, you have to specify the subnet the loadbalancer
+                  should bind to, and optionally what IP address it should use (if you
+                  don't want an automatically assigned one).
+
+                  Currently limited to one virtual IP address per load balancer.
+                  See: https://www.cloudscale.ch/en/api/v1#vip_addresses-attribute-specification
+                items:
+                  description: VirtualIPAddress defines a virtual IP address for the
+                    load balancer.
+                  properties:
+                    address:
+                      description: Address is the actual IP address that should be
+                        assigned to the loadbalancer.
+                      type: string
+                    subnetID:
+                      description: SubnetID is the ID of the subnet where this IP
+                        address resides.
+                      type: string
+                  required:
+                  - subnetID
+                  type: object
+                maxItems: 1
+                type: array
+              zone:
+                description: |-
+                  Zone denotes the availability zone where the load balancer is deployed.
+                  This defaults to the zone of the Nodes (if there is only one).
+
+                  This can not be changed once the LoadBalancer custom resource is created.
+                type: string
             type: object
           status:
             description: LoadBalancerStatus defines the observed state of LoadBalancer
+            properties:
+              cloudscaleStatus:
+                description: CloudscaleStatus is the raw status of the load balancer
+                  as reported by Cloudscale.
+                type: string
+              floatingIPAddresses:
+                description: |-
+                  FloatingIPAddresses contains the floating IP addresses that are assigned to the load balancer.
+                  This is a list of IP addresses in CIDR notation.
+                items:
+                  properties:
+                    cidr:
+                      description: CIDR is the floating IP address in CIDR notation.
+                      type: string
+                  type: object
+                type: array
+              pools:
+                description: Pools contains the status of the pools that are part
+                  of the load balancer.
+                items:
+                  properties:
+                    backends:
+                      description: Backends contains all nodes that are currently
+                        part of the load balancer.
+                      items:
+                        description: StatusBackend defines a backend node in the load
+                          balancer status.
+                        properties:
+                          address:
+                            description: Address is the IP address of the backend
+                              node.
+                            type: string
+                          nodeName:
+                            description: NodeName is the name of the node.
+                            type: string
+                          serverName:
+                            description: ServerName is the name of the server.
+                            type: string
+                          status:
+                            description: Status is the status of the backend node
+                              as reported by the health monitor.
+                            type: string
+                        type: object
+                      type: array
+                    name:
+                      description: Name is the name of the pool.
+                      type: string
+                  type: object
+                type: array
+              virtualIPAddresses:
+                description: VirtualIPAddresses contains the IP addresses through
+                  which the load balancer can be accessed.
+                items:
+                  properties:
+                    address:
+                      description: Address is the IP address of the frontend.
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true
