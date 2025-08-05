@@ -29,10 +29,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/cloudscale-ch/cloudscale-go-sdk/v6"
-	configv1 "github.com/openshift/api/config/v1"
-	machinev1beta1 "github.com/openshift/api/machine/v1beta1"
-	machineconfigurationv1 "github.com/openshift/api/machineconfiguration/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -58,11 +54,6 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(configv1.AddToScheme(scheme))
-	utilruntime.Must(batchv1.AddToScheme(scheme))
-	utilruntime.Must(machineconfigurationv1.AddToScheme(scheme))
-	utilruntime.Must(machinev1beta1.AddToScheme(scheme))
-
 	utilruntime.Must(cloudscalev1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
