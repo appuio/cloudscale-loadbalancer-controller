@@ -8,7 +8,7 @@ require (
 	github.com/cloudscale-ch/cloudscale-go-sdk/v6 v6.0.0
 	github.com/go-logr/logr v1.4.3
 	github.com/google/uuid v1.6.0
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/oauth2 v0.30.0
 	k8s.io/api v0.33.2
