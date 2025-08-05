@@ -23,7 +23,7 @@ spec:
         insecureSkipVerify: true
       metricRelabelings:
       - action: keep
-        regex: openshift_upgrade_controller_.+
+        regex: cloudscale_loadbalancer_controller_.+
         sourceLabels:
         - __name__
   selector:
