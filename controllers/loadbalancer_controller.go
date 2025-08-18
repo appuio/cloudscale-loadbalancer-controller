@@ -63,6 +63,7 @@ type LoadBalancerReconciler struct {
 //+kubebuilder:rbac:groups=cloudscale.appuio.io,resources=loadbalancers/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
 
 // Reconcile compares the LoadBalancer object with the upstream LoadBalancer object and updates the upstream LoadBalancer object if necessary.
 func (r *LoadBalancerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, err error) {
