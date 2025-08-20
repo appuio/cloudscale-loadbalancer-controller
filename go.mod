@@ -1,8 +1,6 @@
 module github.com/appuio/cloudscale-loadbalancer-controller
 
-go 1.24.0
-
-toolchain go1.24.4
+go 1.25
 
 require (
 	github.com/cloudscale-ch/cloudscale-go-sdk/v6 v6.0.0
