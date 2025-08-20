@@ -38,11 +38,13 @@ import (
 // SetupLoadBalancerWebhookWithManager registers the webhook for LoadBalancer in the manager.
 func SetupLoadBalancerWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&cloudscalev1beta1.LoadBalancer{}).
-		WithValidator(&LoadBalancerCustomValidator{}).
+		WithValidator(&LoadBalancerCustomValidator{
+			Client: mgr.GetClient(),
+		}).
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-cloudscale-appuio-io-v1beta1-loadbalancer,mutating=false,failurePolicy=fail,sideEffects=None,groups=cloudscale.appuio.io,resources=loadbalancers,verbs=create;update,versions=v1beta1,name=vloadbalancer-v1beta1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-cloudscale-appuio-io-v1beta1-loadbalancer,mutating=false,failurePolicy=fail,sideEffects=None,groups=cloudscale.appuio.io,resources=loadbalancers,verbs=create;update,versions=v1beta1,name=validate-cloudscale-v1beta1-loadbalancer.appuio.io,admissionReviewVersions=v1
 
 // LoadBalancerCustomValidator struct is responsible for validating the LoadBalancer resource
 // when it is created, updated, or deleted.
@@ -53,17 +55,17 @@ type LoadBalancerCustomValidator struct {
 var _ webhook.CustomValidator = &LoadBalancerCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type LoadBalancer.
-func (v *LoadBalancerCustomValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *LoadBalancerCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	newLB, ok := obj.(*cloudscalev1beta1.LoadBalancer)
 	if !ok {
 		return nil, fmt.Errorf("expected a LoadBalancer object but got %T", obj)
 	}
 
-	return nil, validationErrorsToError(v.verify(nil, newLB))
+	return nil, validationErrorsToError(v.verify(ctx, nil, newLB))
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type LoadBalancer.
-func (v *LoadBalancerCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *LoadBalancerCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	newLB, ok := newObj.(*cloudscalev1beta1.LoadBalancer)
 	if !ok {
 		return nil, fmt.Errorf("expected a LoadBalancer object for the newObj but got %T", newObj)
@@ -73,10 +75,10 @@ func (v *LoadBalancerCustomValidator) ValidateUpdate(_ context.Context, oldObj, 
 		return nil, fmt.Errorf("expected a LoadBalancer object for the oldObj but got %T", oldObj)
 	}
 
-	return nil, validationErrorsToError(v.verify(oldLB, newLB))
+	return nil, validationErrorsToError(v.verify(ctx, oldLB, newLB))
 }
 
-func (v *LoadBalancerCustomValidator) verify(oldLB *cloudscalev1beta1.LoadBalancer, newLB *cloudscalev1beta1.LoadBalancer) []string {
+func (v *LoadBalancerCustomValidator) verify(ctx context.Context, oldLB *cloudscalev1beta1.LoadBalancer, newLB *cloudscalev1beta1.LoadBalancer) []string {
 	var validationErrors []string
 
 	for i, vip := range newLB.Spec.VirtualIPAddresses {
@@ -88,7 +90,7 @@ func (v *LoadBalancerCustomValidator) verify(oldLB *cloudscalev1beta1.LoadBalanc
 		}
 	}
 
-	usedIPs, err := v.usedFloatingIPs()
+	usedIPs, err := v.usedFloatingIPs(ctx)
 	if err != nil {
 		validationErrors = append(validationErrors, fmt.Sprintf(".spec.floatingIPAddresses: Failed to retrieve floating IPs already in use: %v", err))
 	} else {
@@ -166,11 +168,11 @@ func checkStatusCodeRange(code string) (valid, isRange bool) {
 	return false, false
 }
 
-func (v *LoadBalancerCustomValidator) usedFloatingIPs() (map[string]types.NamespacedName, error) {
+func (v *LoadBalancerCustomValidator) usedFloatingIPs(ctx context.Context) (map[string]types.NamespacedName, error) {
 	usedIPs := make(map[string]types.NamespacedName)
 
 	var lbList cloudscalev1beta1.LoadBalancerList
-	if err := v.Client.List(context.Background(), &lbList); err != nil {
+	if err := v.Client.List(ctx, &lbList); err != nil {
 		return nil, fmt.Errorf("failed to list LoadBalancers: %w", err)
 	}
 
