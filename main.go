@@ -19,8 +19,10 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -197,6 +199,12 @@ func main() {
 		&oauth2.Token{AccessToken: cloudscaleAPIToken},
 	))
 	cloudscaleClient := cloudscale.NewClient(tc)
+
+	versionString := "unknown"
+	if v, ok := debug.ReadBuildInfo(); ok {
+		versionString = fmt.Sprintf("%s (%s)", v.Main.Version, v.GoVersion)
+	}
+	cloudscaleClient.UserAgent = "cloudscale-loadbalancer-controller.appuio.io/" + versionString
 
 	if err = (&controllers.LoadBalancerReconciler{
 		Client:   mgr.GetClient(),
