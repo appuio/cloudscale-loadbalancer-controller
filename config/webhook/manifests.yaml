@@ -12,7 +12,7 @@ webhooks:
       namespace: system
       path: /validate-cloudscale-appuio-io-v1beta1-loadbalancer
   failurePolicy: Fail
-  name: vloadbalancer-v1beta1.kb.io
+  name: validate-cloudscale-v1beta1-loadbalancer.appuio.io
   rules:
   - apiGroups:
     - cloudscale.appuio.io
