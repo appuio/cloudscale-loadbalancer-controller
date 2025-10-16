@@ -28,10 +28,11 @@ import (
 const (
 	LoadBalancerFinalizer = "loadbalancer.cloudscale.appuio.io/finalizer"
 
-	controllerAdoptedTag    = "appuio_io_loadbalancer_controller__adopted"
-	controllerManagedTag    = "appuio_io_loadbalancer_controller__managed"
-	controllerNodeNameTag   = "appuio_io_loadbalancer_controller__node_name"
-	controllerServerNameTag = "appuio_io_loadbalancer_controller__server_name"
+	controllerAdoptedTag               = "appuio_io_loadbalancer_controller__adopted"
+	controllerManagedTag               = "appuio_io_loadbalancer_controller__managed"
+	controllerCreationKubernetesUIDTag = "appuio_io_loadbalancer_controller__creation_kubernetes_uid"
+	controllerNodeNameTag              = "appuio_io_loadbalancer_controller__node_name"
+	controllerServerNameTag            = "appuio_io_loadbalancer_controller__server_name"
 
 	cloudscaleProviderIDPrefix = "cloudscale://"
 
@@ -748,7 +749,7 @@ func (r *LoadBalancerReconciler) ensureLoadBalancer(ctx context.Context, lb clou
 
 	if lb.Spec.UUID == "" {
 		// Check if we already created a load balancer with this name but failed to set the UUID on the manifest.
-		ll, err := r.LoadbalancerClient.List(ctx, cloudscale.WithTagFilter(cloudscale.TagMap{controllerManagedTag: "true"}))
+		ll, err := r.LoadbalancerClient.List(ctx, cloudscale.WithTagFilter(cloudscale.TagMap{controllerCreationKubernetesUIDTag: string(lb.UID)}))
 		if err != nil {
 			return cloudscale.LoadBalancer{}, fmt.Errorf("failed to list load balancers: %w", err)
 		}
@@ -781,6 +782,9 @@ func (r *LoadBalancerReconciler) ensureLoadBalancer(ctx context.Context, lb clou
 			vips = &vs
 		}
 
+		tags := baseTagMap()
+		(*tags)[controllerCreationKubernetesUIDTag] = string(lb.UID)
+
 		shouldLB := &cloudscale.LoadBalancerRequest{
 			Name:         name,
 			Flavor:       cloudscaleLoadBalancerFlavor,
@@ -789,7 +793,7 @@ func (r *LoadBalancerReconciler) ensureLoadBalancer(ctx context.Context, lb clou
 				Zone: zone,
 			},
 			TaggedResourceRequest: cloudscale.TaggedResourceRequest{
-				Tags: baseTagMap(),
+				Tags: tags,
 			},
 		}
 		clb, err := r.LoadbalancerClient.Create(ctx, shouldLB)
@@ -919,7 +923,7 @@ func (r *LoadBalancerReconciler) cleanupLoadBalancer(ctx context.Context, lb clo
 	}
 
 	// Cleanup load balancers that were created but manifest save failed.
-	lbs, err := r.LoadbalancerClient.List(ctx, cloudscale.WithTagFilter(cloudscale.TagMap{controllerManagedTag: "true"}))
+	lbs, err := r.LoadbalancerClient.List(ctx, cloudscale.WithTagFilter(cloudscale.TagMap{controllerManagedTag: string(lb.UID)}))
 	if err != nil {
 		return fmt.Errorf("failed to list cloudscale load balancers: %w", err)
 	}
