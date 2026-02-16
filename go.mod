@@ -1,6 +1,6 @@
 module github.com/appuio/cloudscale-loadbalancer-controller
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/cloudscale-ch/cloudscale-go-sdk/v6 v6.0.0
@@ -10,9 +10,9 @@ require (
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/oauth2 v0.32.0
 	k8s.io/api v0.34.1
-	k8s.io/apimachinery v0.34.1
+	k8s.io/apimachinery v0.36.0-alpha.1
 	k8s.io/client-go v0.34.1
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
+	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	sigs.k8s.io/controller-runtime v0.22.3
 )
 
@@ -54,7 +54,6 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -90,19 +89,19 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20251009144603-d2f985daa21b // indirect
-	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/net v0.46.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
-	golang.org/x/term v0.36.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/term v0.39.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.38.0 // indirect
+	golang.org/x/tools v0.40.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251014184007-4626949a642f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f // indirect
 	google.golang.org/grpc v1.76.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -113,9 +112,9 @@ require (
 	k8s.io/component-base v0.34.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250604051438-85fd79dbfd9f // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
+	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.33.0 // indirect
-	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20250211091558-894df3a7e664 // indirect
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20260216173200-e4c1c38bcbdb // indirect
 	sigs.k8s.io/controller-tools v0.18.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kustomize/api v0.20.0 // indirect
@@ -123,7 +122,7 @@ require (
 	sigs.k8s.io/kustomize/kustomize/v5 v5.7.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.20.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.1 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
