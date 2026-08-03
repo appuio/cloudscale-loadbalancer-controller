@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/cloudscale-ch/cloudscale-go-sdk/v6 v6.0.0
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
