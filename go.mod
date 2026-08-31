@@ -1,6 +1,6 @@
 module github.com/appuio/cloudscale-loadbalancer-controller
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/cloudscale-ch/cloudscale-go-sdk/v6 v6.0.0
@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/oauth2 v0.32.0
+	golang.org/x/oauth2 v0.36.0
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
