@@ -1,6 +1,6 @@
 module github.com/appuio/cloudscale-loadbalancer-controller
 
-go 1.25
+go 1.26
 
 require (
 	github.com/cloudscale-ch/cloudscale-go-sdk/v6 v6.0.0
@@ -12,7 +12,7 @@ require (
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
-	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
+	k8s.io/utils v0.0.0-20261023123148-ca04ba58ecab
 	sigs.k8s.io/controller-runtime v0.22.3
 )
 
